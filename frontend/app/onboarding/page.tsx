@@ -389,6 +389,12 @@ const FALLBACK_QUESTIONS: Question[] = [
     question_type: "free_text",
   },
   {
+    question_id: "gender",
+    question_text: "Which gender context should MIRA keep in mind?",
+    options: ["Female", "Male", "Non-binary", "Prefer not to say"],
+    question_type: "single_select",
+  },
+  {
     question_id: "aesthetic",
     question_text: "Which feels most like you?",
     options: ["Effortless", "Sculpted", "Romantic", "Sharp", "Minimal", "Dramatic"],

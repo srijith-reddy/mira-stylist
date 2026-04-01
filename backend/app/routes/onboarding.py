@@ -24,6 +24,12 @@ ONBOARDING_QUESTIONS = [
         question_type=QuestionType.FREE_TEXT
     ),
     OnboardingQuestion(
+        question_id="gender",
+        question_text="Which gender context should MIRA keep in mind?",
+        options=["Female", "Male", "Non-binary", "Prefer not to say"],
+        question_type=QuestionType.SINGLE_SELECT
+    ),
+    OnboardingQuestion(
         question_id="aesthetic",
         question_text="Which feels most like you: effortless, sculpted, romantic, sharp, minimal, or dramatic?",
         options=["Effortless", "Sculpted", "Romantic", "Sharp", "Minimal", "Dramatic"],
@@ -144,6 +150,11 @@ def _build_profile_from_responses(responses: list[OnboardingResponse]) -> dict:
             cleaned_name = name.strip() if isinstance(name, str) else ""
             if cleaned_name:
                 data["name"] = cleaned_name
+        elif r.question_id == "gender":
+            gender = r.answer if isinstance(r.answer, str) else r.answer[0] if r.answer else ""
+            cleaned_gender = gender.strip() if isinstance(gender, str) else ""
+            if cleaned_gender and cleaned_gender != "Prefer not to say":
+                data["gender"] = cleaned_gender
         elif r.question_id == "aesthetic":
             data["preferred_aesthetic"] = r.answer if isinstance(r.answer, str) else r.answer[0] if r.answer else None
         elif r.question_id == "silhouette":
