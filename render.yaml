@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: mira-stylist-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.10
+      - key: DEBUG
+        value: false
+      - key: DATA_DIR
+        value: output/mira_stylist
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FASHN_API_KEY
+        sync: false
+      - key: KLING_ACCESS_KEY
+        sync: false
+      - key: KLING_SECRET_KEY
+        sync: false
+      - key: CARTESIA_API_KEY
+        sync: false
+      - key: CARTESIA_VOICE
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

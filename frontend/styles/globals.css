@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --mira-shell: linear-gradient(180deg, #fcfaf6 0%, #f6f0e7 46%, #f9f4ed 100%);
+  --mira-surface: rgba(255, 255, 255, 0.78);
+  --mira-surface-strong: rgba(255, 255, 255, 0.92);
+  --mira-border: rgba(87, 74, 60, 0.08);
+  --mira-shadow: 0 14px 50px rgba(47, 35, 22, 0.06);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--mira-shell);
+  }
+
+  body {
+    @apply text-mira-charcoal font-body;
+    background:
+      radial-gradient(circle at top, rgba(196, 162, 101, 0.12), transparent 0 32rem),
+      linear-gradient(180deg, #fcfaf6 0%, #f6f0e7 46%, #f9f4ed 100%);
+    min-height: 100vh;
+  }
+
+  ::selection {
+    @apply bg-mira-gold/20 text-mira-charcoal;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .mira-container {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-6 md:px-10;
+  }
+
+  .mira-card {
+    @apply rounded-[1.75rem] border backdrop-blur-xl shadow-soft;
+    background: var(--mira-surface);
+    border-color: var(--mira-border);
+  }
+
+  .mira-card-elevated {
+    @apply rounded-[2rem] border shadow-elevated;
+    background: var(--mira-surface-strong);
+    border-color: rgba(87, 74, 60, 0.06);
+  }
+
+  .mira-btn-primary {
+    @apply inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-full
+           px-6 py-3.5 text-body font-medium tracking-[0.01em]
+           bg-mira-charcoal text-mira-ivory
+           transition-all duration-300 ease-out
+           hover:-translate-y-[1px] hover:bg-mira-midnight hover:shadow-elevated
+           active:scale-[0.98]
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .mira-btn-secondary {
+    @apply inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-full
+           border px-6 py-3.5 text-body font-medium tracking-[0.01em]
+           text-mira-charcoal
+           transition-all duration-300 ease-out
+           hover:-translate-y-[1px] hover:bg-mira-charcoal/5
+           active:scale-[0.98];
+    border-color: rgba(44, 44, 44, 0.14);
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  .mira-btn-gold {
+    @apply inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-full
+           px-6 py-3.5 text-body font-medium tracking-[0.01em]
+           bg-mira-gold text-white
+           transition-all duration-300 ease-out
+           hover:-translate-y-[1px] hover:bg-mira-gold-muted hover:shadow-elevated
+           active:scale-[0.98];
+  }
+
+  .mira-input {
+    @apply w-full rounded-[1.15rem] border px-4 py-3.5 text-body text-mira-charcoal
+           placeholder:text-mira-slate/50
+           focus:outline-none focus:border-mira-gold/50 focus:ring-2 focus:ring-mira-gold/10
+           transition-all duration-200;
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(87, 74, 60, 0.1);
+  }
+
+  .mira-tag {
+    @apply inline-flex min-h-[2rem] items-center px-3.5 py-1.5
+           bg-mira-sand/30 text-mira-graphite text-caption font-medium
+           rounded-full border border-mira-sand/40
+           transition-colors duration-200;
+  }
+
+  .mira-tag-active {
+    @apply bg-mira-charcoal text-mira-ivory border-mira-charcoal;
+  }
+
+  .mira-tag-gold {
+    @apply bg-mira-gold/10 text-mira-gold-muted border-mira-gold/20;
+  }
+
+  .mira-divider {
+    @apply border-t border-mira-sand/40 my-8;
+  }
+
+  .mira-overline {
+    @apply text-overline uppercase tracking-widest text-mira-slate font-medium;
+  }
+
+  .mira-section {
+    @apply rounded-[2rem] border backdrop-blur-xl;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.66));
+    border-color: rgba(87, 74, 60, 0.07);
+    box-shadow: var(--mira-shadow);
+  }
+
+  .mira-shell-pad {
+    @apply pb-28 md:pb-12;
+  }
+
+  .mira-safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+
+  .mira-floating-panel {
+    @apply rounded-[1.75rem] border backdrop-blur-2xl;
+    background: rgba(255, 255, 255, 0.76);
+    border-color: rgba(87, 74, 60, 0.08);
+    box-shadow: 0 10px 30px rgba(47, 35, 22, 0.08);
+  }
+
+  .mira-page-title {
+    @apply font-display text-[2.1rem] leading-[0.98] tracking-[-0.035em] text-mira-charcoal sm:text-[2.6rem] md:text-display-xl;
+  }
+
+  .mira-subtitle {
+    @apply text-[0.95rem] leading-[1.7] text-mira-slate sm:text-body-lg;
+  }
+
+  .mira-fade-in {
+    @apply animate-fade-in;
+  }
+
+  .mira-slide-up {
+    @apply animate-slide-up;
+  }
+}
+
+/* Premium loading shimmer */
+.mira-shimmer {
+  background: linear-gradient(
+    110deg,
+    rgba(245, 240, 235, 0) 0%,
+    rgba(245, 240, 235, 0.5) 40%,
+    rgba(245, 240, 235, 0) 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmerBg 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmerBg {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(196, 162, 101, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 162, 101, 0.5);
+}

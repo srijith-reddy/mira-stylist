@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+httpx
+python-multipart
+pillow
+openai
+python-dotenv
+aiofiles
+uuid6
+cartesia
+PyJWT
