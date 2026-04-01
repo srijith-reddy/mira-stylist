@@ -69,6 +69,42 @@ export default function ProfilePage() {
     }
   }, [profileId]);
 
+  useEffect(() => {
+    if (!profileId || !profile || profile.narrative_summary) {
+      return;
+    }
+
+    const activeProfileId = profileId;
+    let cancelled = false;
+
+    async function refreshPendingNarrative() {
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        if (cancelled) {
+          return;
+        }
+
+        const res = await getProfile(activeProfileId);
+        if (!res.success || !res.data?.narrative_summary?.trim()) {
+          continue;
+        }
+
+        const updated = normalizeProfile(res.data);
+        if (!cancelled) {
+          setProfile(updated);
+          syncDrafts(updated);
+        }
+        return;
+      }
+    }
+
+    refreshPendingNarrative();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profileId, profile?.id, profile?.narrative_summary]);
+
   async function loadProfile() {
     if (!profileId) return;
     const res = await getProfile(profileId);
@@ -258,6 +294,11 @@ export default function ProfilePage() {
                 {profile.narrative_summary && (
                   <p className="mt-5 max-w-2xl text-body-lg italic text-mira-graphite">
                     &ldquo;{profile.narrative_summary}&rdquo;
+                  </p>
+                )}
+                {!profile.narrative_summary && (
+                  <p className="mt-5 max-w-2xl text-body text-mira-slate">
+                    MIRA is still refining your written profile. It should appear here shortly.
                   </p>
                 )}
               </div>

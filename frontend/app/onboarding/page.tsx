@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import MiraLogo from "@/components/MiraLogo";
 import LoadingState from "@/components/LoadingState";
-import { getOnboardingQuestions, submitOnboarding } from "@/lib/api";
+import { getOnboardingQuestions, getProfile, submitOnboarding } from "@/lib/api";
 
 interface Question {
   question_id: string;
@@ -30,6 +30,7 @@ export default function OnboardingPage() {
   const [freeTextInput, setFreeTextInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWaitingForNarrative, setIsWaitingForNarrative] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [narrative, setNarrative] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -99,23 +100,52 @@ export default function OnboardingPage() {
   async function handleSubmit() {
     setIsSubmitting(true);
     setSubmitError("");
-    const responses = Object.entries(answers).map(([question_id, answer]) => ({
-      question_id,
-      answer,
-    }));
+    try {
+      const responses = Object.entries(answers).map(([question_id, answer]) => ({
+        question_id,
+        answer,
+      }));
 
-    const res = await submitOnboarding(responses);
-    if (res.success && res.data) {
-      const profileId = res.data.id;
-      if (profileId) {
-        localStorage.setItem("mira_profile_id", profileId);
+      const res = await submitOnboarding(responses);
+      if (res.success && res.data) {
+        const profileId = res.data.id;
+        if (profileId) {
+          localStorage.setItem("mira_profile_id", profileId);
+        }
+        const initialNarrative = res.data.narrative_summary?.trim();
+        if (initialNarrative) {
+          setNarrative(initialNarrative);
+        } else if (profileId) {
+          setIsWaitingForNarrative(true);
+          const resolvedNarrative = await waitForNarrative(profileId);
+          setNarrative(
+            resolvedNarrative || "Your written profile is still being refined and will appear shortly in MIRA."
+          );
+        } else {
+          setNarrative("Your written profile is still being refined and will appear shortly in MIRA.");
+        }
+        setIsComplete(true);
+      } else {
+        setSubmitError(res.message || "We couldn't save your profile just yet. Please try again.");
       }
-      setNarrative(res.data.narrative_summary || "Your style identity is beginning to take shape.");
-      setIsComplete(true);
-    } else {
-      setSubmitError(res.message || "We couldn't save your profile just yet. Please try again.");
+    } catch {
+      setSubmitError("We couldn't save your profile just yet. Please try again.");
+    } finally {
+      setIsWaitingForNarrative(false);
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
+  }
+
+  async function waitForNarrative(profileId: string) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await getProfile(profileId);
+      const resolvedNarrative = res.success ? res.data?.narrative_summary?.trim() : "";
+      if (resolvedNarrative) {
+        return resolvedNarrative;
+      }
+    }
+    return "";
   }
 
   if (isLoading) {
@@ -130,14 +160,26 @@ export default function OnboardingPage() {
     );
   }
 
-  if (isSubmitting) {
+  if (isSubmitting || isWaitingForNarrative) {
     return (
       <main className="flex min-h-screen items-center justify-center px-5">
         <LoadingState
-          caption="Building your profile"
-          message="MIRA is shaping your style identity."
-          detail="This usually takes a brief moment."
-          steps={["Reviewing your preferences", "Writing your style narrative", "Preparing your profile"]}
+          caption={isWaitingForNarrative ? "Finishing your profile note" : "Building your profile"}
+          message={
+            isWaitingForNarrative
+              ? "Your preferences are saved. MIRA is finishing the written profile."
+              : "MIRA is shaping your style identity."
+          }
+          detail={
+            isWaitingForNarrative
+              ? "This usually settles in within a few more seconds."
+              : "This usually takes a brief moment."
+          }
+          steps={
+            isWaitingForNarrative
+              ? ["Saving your preferences", "Writing your style narrative", "Preparing your profile"]
+              : ["Reviewing your preferences", "Writing your style narrative", "Preparing your profile"]
+          }
           activeStep={1}
         />
       </main>
@@ -155,9 +197,15 @@ export default function OnboardingPage() {
         >
           <MiraLogo size="md" showTagline={false} />
           <p className="mira-overline mt-8">Your Style Identity</p>
-          <p className="mt-4 font-display text-[1.55rem] leading-[1.35] tracking-[-0.02em] text-mira-graphite sm:text-[1.9rem]">
-            &ldquo;{narrative}&rdquo;
-          </p>
+          {narrative.startsWith("Your written profile is still being refined") ? (
+            <div className="mt-5 rounded-[1.6rem] bg-white/72 px-5 py-5 text-left text-[0.98rem] leading-[1.7] text-mira-slate">
+              {narrative}
+            </div>
+          ) : (
+            <p className="mt-4 font-display text-[1.55rem] leading-[1.35] tracking-[-0.02em] text-mira-graphite sm:text-[1.9rem]">
+              &ldquo;{narrative}&rdquo;
+            </p>
+          )}
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             <button onClick={() => router.push("/try-on")} className="mira-btn-primary w-full">
               Visualize Your First Look

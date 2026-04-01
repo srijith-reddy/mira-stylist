@@ -1,15 +1,19 @@
-from fastapi import APIRouter, HTTPException
+import asyncio
+import logging
+
+from fastapi import APIRouter, BackgroundTasks
 from ..models.schemas import (
-    OnboardingSession, OnboardingQuestion, OnboardingResponse,
+    OnboardingQuestion, OnboardingResponse,
     UserProfile, APIResponse, QuestionType, LuxuryPreference
 )
 from ..services.profile_service import ProfileService
-from ..services.stylist_service import StylistService
 from ..utils.env import get_settings
 
 router = APIRouter(prefix="/api/onboarding", tags=["Onboarding"])
 profile_service = ProfileService()
-stylist_service = StylistService()
+logger = logging.getLogger(__name__)
+
+NARRATIVE_IMMEDIATE_TIMEOUT_SECONDS = 5.5
 
 # Pre-defined onboarding questions — conversational, not form-like
 ONBOARDING_QUESTIONS = [
@@ -81,26 +85,42 @@ async def get_onboarding_questions():
     return APIResponse(success=True, data=ONBOARDING_QUESTIONS, message="Your style journey begins here.")
 
 @router.post("/submit", response_model=APIResponse)
-async def submit_onboarding(responses: list[OnboardingResponse]):
+async def submit_onboarding(
+    responses: list[OnboardingResponse],
+    background_tasks: BackgroundTasks,
+):
     """Process onboarding responses and generate a user profile."""
-    # Build a user profile from the responses
-    # Use the stylist service to generate a narrative summary
-    # Save the profile
-    # Return the profile
-
     profile_data = _build_profile_from_responses(responses)
+    narrative_pending = False
 
-    # Generate narrative summary using Claude via stylist service
-    narrative = await _generate_narrative(profile_data, responses)
-    profile_data["narrative_summary"] = narrative
+    try:
+        profile_data["narrative_summary"] = await asyncio.wait_for(
+            _generate_narrative(profile_data, responses),
+            timeout=NARRATIVE_IMMEDIATE_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        narrative_pending = True
+    except Exception:
+        logger.exception("Immediate onboarding narrative generation failed.")
+        narrative_pending = True
 
     profile = UserProfile(**profile_data)
     saved = await profile_service.create_profile(profile)
 
+    if narrative_pending:
+        background_tasks.add_task(_generate_and_store_narrative, saved.id, responses)
+
     return APIResponse(
         success=True,
-        data=saved.model_dump(mode="json"),
-        message="Welcome to MIRA. Your style profile is ready."
+        data={
+            **saved.model_dump(mode="json"),
+            "narrative_pending": narrative_pending,
+        },
+        message=(
+            "Welcome to MIRA. Your style profile is ready."
+            if not narrative_pending
+            else "Welcome to MIRA. Your profile is saved while the written style note is finishing."
+        )
     )
 
 def _build_profile_from_responses(responses: list[OnboardingResponse]) -> dict:
@@ -158,7 +178,7 @@ async def _generate_narrative(profile_data: dict, responses: list[OnboardingResp
         client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         completion = await client.chat.completions.create(
             model=settings.OPENAI_MODEL,
-            max_tokens=300,
+            max_tokens=140,
             messages=[
                 {
                     "role": "system",
@@ -175,3 +195,24 @@ async def _generate_narrative(profile_data: dict, responses: list[OnboardingResp
         return completion.choices[0].message.content or ""
     except Exception:
         return "A distinctive personal style is beginning to take shape — we look forward to refining it together."
+
+
+async def _generate_and_store_narrative(
+    profile_id: str,
+    responses: list[OnboardingResponse],
+) -> None:
+    """Finish the profile narrative off the critical path when the model runs long."""
+    try:
+        profile = await profile_service.get_profile(profile_id)
+        if profile is None:
+            return
+
+        profile_data = profile.model_dump(mode="json")
+        narrative = await _generate_narrative(profile_data, responses)
+        if narrative:
+            await profile_service.update_profile(
+                profile_id,
+                {"narrative_summary": narrative},
+            )
+    except Exception:
+        logger.exception("Background onboarding narrative generation failed for %s.", profile_id)
