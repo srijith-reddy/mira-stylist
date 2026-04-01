@@ -433,23 +433,6 @@ export default function TryOnPage() {
                     inputRef={garmentInputRef}
                   />
                 </div>
-
-                <div className="mira-card-elevated p-5 md:hidden">
-                  <p className="mira-overline">Ready when you are</p>
-                  <p className="mt-2 text-body text-mira-slate">
-                    {readyToGenerate
-                      ? "Both images are in place. Generate the look from here."
-                      : "Add both images first, then generate the look right here."}
-                  </p>
-                  <button
-                    onClick={handleTryOn}
-                    disabled={!readyToGenerate}
-                    className="mira-btn-primary mt-5 w-full"
-                  >
-                    {motionEnabled ? "Generate Look + Motion" : "Generate the Look"}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
               </div>
 
               <div className="space-y-5">
@@ -562,6 +545,22 @@ export default function TryOnPage() {
                       <p className="mt-4 text-[0.83rem] leading-[1.6] text-mira-slate">{motionDescription}</p>
                     </>
                   )}
+
+                  <div className="mt-6 border-t border-black/5 pt-5">
+                    <p className="text-[0.84rem] leading-[1.6] text-mira-slate">
+                      {readyToGenerate
+                        ? "Everything is in place. Generate the look from here."
+                        : "Add both images above, then generate the look here."}
+                    </p>
+                    <button
+                      onClick={handleTryOn}
+                      disabled={!readyToGenerate}
+                      className="mira-btn-primary mt-4 flex w-full items-center justify-center gap-2"
+                    >
+                      {motionEnabled ? "Generate Look + Motion" : "Generate the Look"}
+                      <Sparkles className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
