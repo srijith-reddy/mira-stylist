@@ -40,9 +40,14 @@ export default function OnboardingPage() {
   }, []);
 
   async function loadQuestions() {
-    const res = await getOnboardingQuestions();
-    setQuestions(res.success && res.data ? res.data : FALLBACK_QUESTIONS);
-    setIsLoading(false);
+    try {
+      const res = await getOnboardingQuestions();
+      setQuestions(res.success && res.data ? res.data : FALLBACK_QUESTIONS);
+    } catch {
+      setQuestions(FALLBACK_QUESTIONS);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const current = questions[currentIndex];
