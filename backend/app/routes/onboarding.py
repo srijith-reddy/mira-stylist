@@ -175,6 +175,13 @@ async def _generate_narrative(profile_data: dict, responses: list[OnboardingResp
         if not settings.OPENAI_API_KEY:
             raise ValueError("No OpenAI API key configured")
         response_text = "\n".join([f"Q: {r.question_id} -> A: {r.answer}" for r in responses])
+        profile_context = "\n".join(
+            [
+                f"Name: {profile_data.get('name') or 'Not provided'}",
+                f"Gender: {profile_data.get('gender') or 'Not provided'}",
+                f"Pronouns: {profile_data.get('pronouns') or 'Not provided'}",
+            ]
+        )
         client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         completion = await client.chat.completions.create(
             model=settings.OPENAI_MODEL,
@@ -186,10 +193,15 @@ async def _generate_narrative(profile_data: dict, responses: list[OnboardingResp
                         "You are MIRA, an elite AI fashion stylist. Generate a concise, elegant "
                         "narrative summary (2-3 sentences) of this person's style identity based "
                         "on their onboarding responses. Write in third person. Be warm, perceptive, "
-                        "and refined. Never use clichés or generic phrases."
+                        "and refined. Never use clichés or generic phrases. "
+                        "Do not infer gender from fashion context. If explicit pronouns are not provided, "
+                        "avoid gendered pronouns and use the person's name, 'they', or 'this profile' instead."
                     ),
                 },
-                {"role": "user", "content": f"Onboarding responses:\n{response_text}"},
+                {
+                    "role": "user",
+                    "content": f"Profile context:\n{profile_context}\n\nOnboarding responses:\n{response_text}",
+                },
             ],
         )
         return completion.choices[0].message.content or ""

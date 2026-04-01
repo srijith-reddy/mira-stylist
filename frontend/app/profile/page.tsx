@@ -46,6 +46,34 @@ type SnapshotDraft = {
   height_cm: string;
 };
 
+function normalizeNarrativeSummary(profile: Profile) {
+  const narrative = profile.narrative_summary?.trim();
+  if (!narrative) return "";
+
+  const gender = profile.gender?.trim().toLowerCase() || "";
+  const readsMale = gender.includes("male") && !gender.includes("female");
+  const readsFemale = gender.includes("female");
+  const hasFemininePronouns = /\b(she|her|hers)\b/i.test(narrative);
+  const hasMasculinePronouns = /\b(he|him|his)\b/i.test(narrative);
+
+  const mismatchedPronouns =
+    (readsMale && hasFemininePronouns) || (readsFemale && hasMasculinePronouns);
+
+  if (!mismatchedPronouns) {
+    return narrative;
+  }
+
+  const displayName = profile.name?.trim() || "They";
+
+  return narrative
+    .replace(/\b[Ss]he\b/g, displayName)
+    .replace(/\b[Hh]e\b/g, displayName)
+    .replace(/\b[Hh]im\b/g, "them")
+    .replace(/\b[Hh]ers\b/g, "theirs")
+    .replace(/\b[Hh]is\b/g, "their")
+    .replace(/\b[Hh]er\b/g, "their");
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -271,6 +299,7 @@ export default function ProfilePage() {
   ]
     .filter(Boolean)
     .join(" · ");
+  const displayNarrative = normalizeNarrativeSummary(profile);
 
   return (
     <>
@@ -291,12 +320,12 @@ export default function ProfilePage() {
                     {profileSummary}
                   </div>
                 )}
-                {profile.narrative_summary && (
+                {displayNarrative && (
                   <p className="mt-5 max-w-2xl text-body-lg italic text-mira-graphite">
-                    &ldquo;{profile.narrative_summary}&rdquo;
+                    &ldquo;{displayNarrative}&rdquo;
                   </p>
                 )}
-                {!profile.narrative_summary && (
+                {!displayNarrative && (
                   <p className="mt-5 max-w-2xl text-body text-mira-slate">
                     MIRA is still refining your written profile. It should appear here shortly.
                   </p>
