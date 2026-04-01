@@ -433,6 +433,23 @@ export default function TryOnPage() {
                     inputRef={garmentInputRef}
                   />
                 </div>
+
+                <div className="mira-card-elevated p-5 md:hidden">
+                  <p className="mira-overline">Ready when you are</p>
+                  <p className="mt-2 text-body text-mira-slate">
+                    {readyToGenerate
+                      ? "Both images are in place. Generate the look from here."
+                      : "Add both images first, then generate the look right here."}
+                  </p>
+                  <button
+                    onClick={handleTryOn}
+                    disabled={!readyToGenerate}
+                    className="mira-btn-primary mt-5 w-full"
+                  >
+                    {motionEnabled ? "Generate Look + Motion" : "Generate the Look"}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-5">
@@ -798,7 +815,7 @@ export default function TryOnPage() {
       </main>
 
       {stage === "upload" && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/5 bg-[#fbf8f2]/92 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+0.9rem)] pt-3 backdrop-blur-2xl">
+        <div className="fixed inset-x-0 bottom-0 z-40 hidden border-t border-black/5 bg-[#fbf8f2]/92 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+0.9rem)] pt-3 backdrop-blur-2xl md:block">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
             <div className="hidden flex-1 rounded-full bg-[#f4ece1] px-4 py-3 text-[0.84rem] text-mira-slate md:block">
               {readyToGenerate

@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { Bookmark, Heart, Layers3 } from "lucide-react";
+import { Bookmark, Heart, Layers3, SlidersHorizontal, X } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import LoadingState from "@/components/LoadingState";
-import { deleteLook, listCollections, listLooks, toggleFavorite } from "@/lib/api";
+import { deleteLook, listLooks, toggleFavorite } from "@/lib/api";
 
 interface Look {
   look_id: string;
@@ -24,13 +24,6 @@ interface Look {
   collection_ids?: string[];
   created_at: string;
   animated_clip_url?: string;
-}
-
-interface Collection {
-  collection_id: string;
-  name: string;
-  description: string;
-  look_ids: string[];
 }
 
 function normalizeTag(tag: string) {
@@ -74,8 +67,9 @@ function getEffectiveVibeTags(look: Look) {
 
 export default function WardrobePage() {
   const [looks, setLooks] = useState<Look[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -83,9 +77,8 @@ export default function WardrobePage() {
   }, []);
 
   async function loadData() {
-    const [looksRes, collectionsRes] = await Promise.all([listLooks(), listCollections()]);
+    const looksRes = await listLooks();
     if (looksRes.success) setLooks(looksRes.data || []);
-    if (collectionsRes.success) setCollections(collectionsRes.data || []);
     setIsLoading(false);
   }
 
@@ -112,7 +105,7 @@ export default function WardrobePage() {
     }
   }
 
-  const collectionFilters = collections.map((collection) => collection.name);
+  const filterChips = ["all", "favorites"];
   const occasionFilterCounts = new Map<string, number>();
   for (const look of looks) {
     for (const tag of getEffectiveOccasionTags(look)) {
@@ -123,27 +116,14 @@ export default function WardrobePage() {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([tag]) => tag);
 
-  const filterChips = [
-    "all",
-    "favorites",
-    ...collectionFilters,
-    ...occasionFilters.filter(
-      (tag) => !collectionFilters.some((name) => normalizeTag(name) === normalizeTag(tag))
-    ),
-  ];
+  const filteredByPrimary =
+    activeFilter === "favorites" ? looks.filter((look) => look.is_favorite) : looks;
 
-  const filteredLooks =
-    activeFilter === "all"
-      ? looks
-      : activeFilter === "favorites"
-      ? looks.filter((look) => look.is_favorite)
-      : collectionFilters.includes(activeFilter)
-      ? looks.filter((look) =>
-          (look.collection_ids || []).some(
-            (id) => collections.find((collection) => collection.collection_id === id)?.name === activeFilter
-          )
-        )
-      : looks.filter((look) => getEffectiveOccasionTags(look).includes(normalizeTag(activeFilter)));
+  const filteredLooks = selectedOccasion
+    ? filteredByPrimary.filter((look) =>
+        getEffectiveOccasionTags(look).includes(normalizeTag(selectedOccasion))
+      )
+    : filteredByPrimary;
 
   const favoriteCount = looks.filter((look) => look.is_favorite).length;
   const motionCount = looks.filter((look) => Boolean(look.animated_clip_url)).length;
@@ -168,14 +148,14 @@ export default function WardrobePage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <StatCard icon={Layers3} label="Saved looks" value={String(looks.length)} />
+                <StatCard icon={Layers3} label="All looks" value={String(looks.length)} />
                 <StatCard icon={Heart} label="Favorites" value={String(favoriteCount)} />
-                <StatCard icon={Bookmark} label="In motion" value={String(motionCount)} />
+                <StatCard icon={Bookmark} label="Motion" value={String(motionCount)} />
               </div>
             </div>
           </motion.div>
 
-          <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+          <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
             {filterChips.map((filter) => (
               <button
                 key={filter}
@@ -186,14 +166,38 @@ export default function WardrobePage() {
                     : "bg-white/70 text-mira-slate"
                 }`}
               >
-                {filter === "all"
-                  ? "All Looks"
-                  : filter === "favorites"
-                  ? "Favorites"
-                  : formatTag(filter)}
+                {filter === "all" ? "All Looks" : "Favorites"}
               </button>
             ))}
+
+            {occasionFilters.length > 0 && (
+              <button
+                onClick={() => setIsFilterOpen(true)}
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-[0.82rem] transition-all ${
+                  selectedOccasion
+                    ? "bg-mira-gold/15 text-mira-charcoal"
+                    : "bg-white/70 text-mira-slate"
+                }`}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {selectedOccasion ? formatTag(selectedOccasion) : "Filter"}
+              </button>
+            )}
           </div>
+
+          {selectedOccasion && (
+            <div className="mb-6 flex items-center gap-2">
+              <span className="rounded-full bg-[#f4ece1] px-4 py-2 text-[0.78rem] uppercase tracking-[0.12em] text-mira-charcoal">
+                {formatTag(selectedOccasion)}
+              </span>
+              <button
+                onClick={() => setSelectedOccasion(null)}
+                className="text-[0.78rem] uppercase tracking-[0.14em] text-mira-slate transition-colors hover:text-mira-charcoal"
+              >
+                Clear
+              </button>
+            </div>
+          )}
 
           {isLoading ? (
             <div className="flex min-h-[40vh] items-center justify-center">
@@ -231,6 +235,91 @@ export default function WardrobePage() {
           )}
         </div>
       </main>
+
+      <AnimatePresence>
+        {isFilterOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close filters"
+              className="fixed inset-0 z-40 bg-[#1f1b17]/20 backdrop-blur-[2px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsFilterOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-2xl rounded-t-[2rem] border border-black/5 bg-[#fbf8f2] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+1.2rem)] pt-5 shadow-[0_-24px_60px_rgba(36,28,21,0.12)]"
+            >
+              <div className="mx-auto h-1.5 w-14 rounded-full bg-[#dfd3c4]" />
+              <div className="mt-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="mira-overline">Filter</p>
+                  <h2 className="mt-2 text-heading text-mira-charcoal">Refine by occasion</h2>
+                  <p className="mt-2 text-body text-mira-slate">
+                    Keep the wardrobe calm by default, then narrow it only when you need to.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsFilterOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-mira-slate transition-colors hover:text-mira-charcoal"
+                  aria-label="Close filters"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedOccasion(null)}
+                  className={`rounded-full px-4 py-2.5 text-[0.82rem] transition-all ${
+                    selectedOccasion === null
+                      ? "bg-mira-charcoal text-white"
+                      : "bg-white/72 text-mira-slate"
+                  }`}
+                >
+                  Any occasion
+                </button>
+                {occasionFilters.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedOccasion(tag)}
+                    className={`rounded-full px-4 py-2.5 text-[0.82rem] transition-all ${
+                      selectedOccasion === tag
+                        ? "bg-mira-charcoal text-white"
+                        : "bg-white/72 text-mira-slate"
+                    }`}
+                  >
+                    {formatTag(tag)}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <button
+                  onClick={() => {
+                    setSelectedOccasion(null);
+                    setIsFilterOpen(false);
+                  }}
+                  className="mira-btn-secondary w-full"
+                >
+                  Clear Filter
+                </button>
+                <button
+                  onClick={() => setIsFilterOpen(false)}
+                  className="mira-btn-primary w-full"
+                >
+                  View Looks
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
