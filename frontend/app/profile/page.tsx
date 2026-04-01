@@ -55,23 +55,39 @@ function normalizeNarrativeSummary(profile: Profile) {
   const readsFemale = gender.includes("female");
   const hasFemininePronouns = /\b(she|her|hers)\b/i.test(narrative);
   const hasMasculinePronouns = /\b(he|him|his)\b/i.test(narrative);
+  const hasNeutralPronouns = /\b(they|their|theirs|them)\b/i.test(narrative);
 
   const mismatchedPronouns =
     (readsMale && hasFemininePronouns) || (readsFemale && hasMasculinePronouns);
 
-  if (!mismatchedPronouns) {
+  if (!mismatchedPronouns && !(readsMale || readsFemale) && !hasNeutralPronouns) {
     return narrative;
   }
 
-  const displayName = profile.name?.trim() || "They";
+  if (readsMale) {
+    return narrative
+      .replace(/\b[Ss]he\b/g, "He")
+      .replace(/\b[Hh]er\b(?=\s+[A-Za-z])/g, "his")
+      .replace(/\b[Hh]er\b/g, "him")
+      .replace(/\b[Hh]ers\b/g, "his")
+      .replace(/\b[Tt]hey\b/g, "he")
+      .replace(/\b[Tt]heirs\b/g, "his")
+      .replace(/\b[Tt]heir\b/g, "his")
+      .replace(/\b[Tt]hem\b/g, "him");
+  }
 
-  return narrative
-    .replace(/\b[Ss]he\b/g, displayName)
-    .replace(/\b[Hh]e\b/g, displayName)
-    .replace(/\b[Hh]im\b/g, "them")
-    .replace(/\b[Hh]ers\b/g, "theirs")
-    .replace(/\b[Hh]is\b/g, "their")
-    .replace(/\b[Hh]er\b/g, "their");
+  if (readsFemale) {
+    return narrative
+      .replace(/\b[Hh]e\b/g, "She")
+      .replace(/\b[Hh]im\b/g, "her")
+      .replace(/\b[Hh]is\b/g, "her")
+      .replace(/\b[Tt]hey\b/g, "she")
+      .replace(/\b[Tt]heirs\b/g, "hers")
+      .replace(/\b[Tt]heir\b/g, "her")
+      .replace(/\b[Tt]hem\b/g, "her");
+  }
+
+  return narrative;
 }
 
 export default function ProfilePage() {
