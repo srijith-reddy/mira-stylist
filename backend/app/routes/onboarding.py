@@ -18,6 +18,12 @@ NARRATIVE_IMMEDIATE_TIMEOUT_SECONDS = 5.5
 # Pre-defined onboarding questions — conversational, not form-like
 ONBOARDING_QUESTIONS = [
     OnboardingQuestion(
+        question_id="name",
+        question_text="What should MIRA call you?",
+        options=[],
+        question_type=QuestionType.FREE_TEXT
+    ),
+    OnboardingQuestion(
         question_id="aesthetic",
         question_text="Which feels most like you: effortless, sculpted, romantic, sharp, minimal, or dramatic?",
         options=["Effortless", "Sculpted", "Romantic", "Sharp", "Minimal", "Dramatic"],
@@ -133,7 +139,12 @@ def _build_profile_from_responses(responses: list[OnboardingResponse]) -> dict:
         "brand_size_references": [],
     }
     for r in responses:
-        if r.question_id == "aesthetic":
+        if r.question_id == "name":
+            name = r.answer if isinstance(r.answer, str) else r.answer[0] if r.answer else ""
+            cleaned_name = name.strip() if isinstance(name, str) else ""
+            if cleaned_name:
+                data["name"] = cleaned_name
+        elif r.question_id == "aesthetic":
             data["preferred_aesthetic"] = r.answer if isinstance(r.answer, str) else r.answer[0] if r.answer else None
         elif r.question_id == "silhouette":
             val = r.answer if isinstance(r.answer, str) else r.answer[0] if r.answer else None

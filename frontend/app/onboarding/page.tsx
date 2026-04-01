@@ -54,6 +54,14 @@ export default function OnboardingPage() {
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const currentAnswer = current ? answers[current.question_id] : null;
 
+  useEffect(() => {
+    if (!current || current.question_type !== "free_text") {
+      return;
+    }
+    const existing = answers[current.question_id];
+    setFreeTextInput(typeof existing === "string" ? existing : "");
+  }, [current, answers]);
+
   const canContinue = useMemo(() => {
     if (!current) return false;
     if (current.question_type === "multi_select") {
@@ -308,12 +316,14 @@ export default function OnboardingPage() {
                   {current.question_type === "free_text" && (
                     <div className="mt-7">
                       <p className="mb-3 text-body text-mira-slate">
-                        A short note is enough. MIRA only needs the useful signal.
+                        {current.question_id === "name"
+                          ? "First name is enough."
+                          : "A short note is enough. MIRA only needs the useful signal."}
                       </p>
                       <textarea
                         value={freeTextInput}
                         onChange={(event) => setFreeTextInput(event.target.value)}
-                        placeholder="Write a brief note..."
+                        placeholder={current.question_id === "name" ? "Your name" : "Write a brief note..."}
                         className="mira-input min-h-[160px] resize-none"
                         autoFocus
                       />
@@ -372,6 +382,12 @@ export default function OnboardingPage() {
 }
 
 const FALLBACK_QUESTIONS: Question[] = [
+  {
+    question_id: "name",
+    question_text: "What should MIRA call you?",
+    options: [],
+    question_type: "free_text",
+  },
   {
     question_id: "aesthetic",
     question_text: "Which feels most like you?",
