@@ -228,7 +228,7 @@ class StylistService:
 
         response = await self.client.chat.completions.create(
             model=self.model,
-            max_tokens=850,
+            max_tokens=520,
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},

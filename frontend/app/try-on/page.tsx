@@ -25,6 +25,7 @@ import {
   runTryOn,
   saveLook,
 } from "@/lib/api";
+import { cacheProfileSnapshot, getCachedProfileSnapshot, upsertCachedLook } from "@/lib/session-cache";
 
 type Stage = "upload" | "processing" | "result";
 
@@ -157,6 +158,15 @@ export default function TryOnPage() {
   const profileId = typeof window !== "undefined" ? localStorage.getItem("mira_profile_id") : null;
 
   useEffect(() => {
+    if (profileId) {
+      const cachedProfile = getCachedProfileSnapshot<Profile>(profileId);
+      if (cachedProfile) {
+        setProfile(cachedProfile);
+        if (cachedProfile.brand_size_references?.[0]?.brand) {
+          setGarmentBrand(cachedProfile.brand_size_references[0].brand);
+        }
+      }
+    }
     loadProfile();
   }, []);
 
@@ -173,6 +183,7 @@ export default function TryOnPage() {
     if (res.success && res.data) {
       const nextProfile = res.data as Profile;
       setProfile(nextProfile);
+      cacheProfileSnapshot(nextProfile);
       if (nextProfile.brand_size_references?.[0]?.brand) {
         setGarmentBrand(nextProfile.brand_size_references[0].brand);
       }
@@ -309,6 +320,7 @@ export default function TryOnPage() {
     if (res.success && res.data) {
       setIsSaved(true);
       setSavedLookId(res.data.look_id);
+      upsertCachedLook(res.data);
     } else {
       setError("We couldn't save this look just yet.");
     }

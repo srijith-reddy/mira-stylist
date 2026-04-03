@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import LoadingState from "@/components/LoadingState";
 import { getProfile, updateProfile } from "@/lib/api";
+import { cacheProfileSnapshot, getCachedProfileSnapshot } from "@/lib/session-cache";
 
 type BrandSizeReference = {
   category: string;
@@ -107,6 +108,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profileId) {
+      const cachedProfile = getCachedProfileSnapshot(profileId);
+      if (cachedProfile) {
+        const normalizedCachedProfile = normalizeProfile(cachedProfile);
+        setProfile(normalizedCachedProfile);
+        syncDrafts(normalizedCachedProfile);
+        setIsLoading(false);
+      }
       loadProfile();
     } else {
       setIsLoading(false);
@@ -156,6 +164,7 @@ export default function ProfilePage() {
       const loadedProfile = normalizeProfile(res.data);
       setProfile(loadedProfile);
       syncDrafts(loadedProfile);
+      cacheProfileSnapshot(res.data);
     }
     setIsLoading(false);
   }
@@ -217,6 +226,7 @@ export default function ProfilePage() {
       const updated = normalizeProfile(res.data);
       setProfile(updated);
       syncDrafts(updated);
+      cacheProfileSnapshot(res.data);
       setEditSection(null);
       setSaveError("");
       return;
@@ -246,6 +256,7 @@ export default function ProfilePage() {
       const updated = normalizeProfile(res.data);
       setProfile(updated);
       syncDrafts(updated);
+      cacheProfileSnapshot(res.data);
       setEditSection(null);
       setSaveError("");
       return;

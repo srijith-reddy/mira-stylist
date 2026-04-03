@@ -8,6 +8,11 @@ import { Bookmark, Heart, Layers3, SlidersHorizontal, X } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import LoadingState from "@/components/LoadingState";
 import { deleteLook, listLooks, toggleFavorite } from "@/lib/api";
+import {
+  cacheLooksSnapshot,
+  getCachedLooksSnapshot,
+  removeCachedLook,
+} from "@/lib/session-cache";
 
 interface Look {
   look_id: string;
@@ -73,23 +78,34 @@ export default function WardrobePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const cachedLooks = getCachedLooksSnapshot<Look[]>();
+    if (cachedLooks && cachedLooks.length > 0) {
+      setLooks(cachedLooks);
+      setIsLoading(false);
+    }
     loadData();
   }, []);
 
   async function loadData() {
     const looksRes = await listLooks();
-    if (looksRes.success) setLooks(looksRes.data || []);
+    if (looksRes.success) {
+      const nextLooks = looksRes.data || [];
+      setLooks(nextLooks);
+      cacheLooksSnapshot(nextLooks);
+    }
     setIsLoading(false);
   }
 
   async function handleToggleFavorite(lookId: string) {
     const res = await toggleFavorite(lookId);
     if (res.success) {
-      setLooks((current) =>
-        current.map((look) =>
+      setLooks((current) => {
+        const nextLooks = current.map((look) =>
           look.look_id === lookId ? { ...look, is_favorite: !look.is_favorite } : look
-        )
-      );
+        );
+        cacheLooksSnapshot(nextLooks);
+        return nextLooks;
+      });
     }
   }
 
@@ -101,7 +117,12 @@ export default function WardrobePage() {
 
     const res = await deleteLook(lookId);
     if (res.success) {
-      setLooks((current) => current.filter((look) => look.look_id !== lookId));
+      setLooks((current) => {
+        const nextLooks = current.filter((look) => look.look_id !== lookId);
+        cacheLooksSnapshot(nextLooks);
+        return nextLooks;
+      });
+      removeCachedLook(lookId);
     }
   }
 

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import MiraLogo from "@/components/MiraLogo";
 import LoadingState from "@/components/LoadingState";
 import { getOnboardingQuestions, getProfile, submitOnboarding } from "@/lib/api";
+import { cacheProfileSnapshot } from "@/lib/session-cache";
 
 interface Question {
   question_id: string;
@@ -125,6 +126,7 @@ export default function OnboardingPage() {
         if (profileId) {
           localStorage.setItem("mira_profile_id", profileId);
         }
+        cacheProfileSnapshot(res.data);
         const initialNarrative = res.data.narrative_summary?.trim();
         if (initialNarrative) {
           setNarrative(initialNarrative);
@@ -155,6 +157,9 @@ export default function OnboardingPage() {
       const res = await getProfile(profileId);
       const resolvedNarrative = res.success ? res.data?.narrative_summary?.trim() : "";
       if (resolvedNarrative) {
+        if (res.data) {
+          cacheProfileSnapshot(res.data);
+        }
         return resolvedNarrative;
       }
     }
