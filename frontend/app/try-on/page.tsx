@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, ReactNode, RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight,
   Check,
   ChevronDown,
   Film,
@@ -825,25 +824,6 @@ export default function TryOnPage() {
         )}
       </main>
 
-      {stage === "upload" && (
-        <div className="fixed inset-x-0 bottom-0 z-40 hidden border-t border-black/5 bg-[#fbf8f2]/92 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+0.9rem)] pt-3 backdrop-blur-2xl md:block">
-          <div className="mx-auto flex max-w-6xl items-center gap-3">
-            <div className="hidden flex-1 rounded-full bg-[#f4ece1] px-4 py-3 text-[0.84rem] text-mira-slate md:block">
-              {readyToGenerate
-                ? "Everything is ready. MIRA can generate the look now."
-                : "Add both images to continue."}
-            </div>
-            <button
-              onClick={handleTryOn}
-              disabled={!readyToGenerate}
-              className="mira-btn-primary w-full md:w-auto"
-            >
-              {motionEnabled ? "Generate Look + Motion" : "Generate the Look"}
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }
